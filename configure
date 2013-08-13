@@ -988,6 +988,7 @@ enable_video_ggi
 enable_video_svga
 enable_video_vgl
 enable_video_wscons
+enable_video_vnc
 enable_video_aalib
 enable_video_caca
 enable_video_qtopia
@@ -1722,6 +1723,7 @@ Optional Features:
   --enable-video-svga     use SVGAlib video driver [default=yes]
   --enable-video-vgl      use VGL video driver [default=yes]
   --enable-video-wscons   use wscons video driver [default=yes]
+  --enable-video-vnc      use libvncserver video driver [default=no]
   --enable-video-aalib    use AAlib video driver [default=no]
   --enable-video-caca     use libcaca video driver [default=no]
   --enable-video-qtopia   use Qtopia video driver [default=no]
@@ -4629,13 +4631,13 @@ if test "${lt_cv_nm_interface+set}" = set; then
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:4632: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:4634: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4635: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:4637: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4638: output\"" >&5)
+  (eval echo "\"\$as_me:4640: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -5845,7 +5847,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5848 "configure"' > conftest.$ac_ext
+  echo '#line 5850 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7512,11 +7514,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7515: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7517: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7519: \$? = $ac_status" >&5
+   echo "$as_me:7521: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7851,11 +7853,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7854: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7856: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7858: \$? = $ac_status" >&5
+   echo "$as_me:7860: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7956,11 +7958,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7959: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7961: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7963: \$? = $ac_status" >&5
+   echo "$as_me:7965: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8011,11 +8013,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8014: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8016: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8018: \$? = $ac_status" >&5
+   echo "$as_me:8020: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10813,7 +10815,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10816 "configure"
+#line 10818 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10909,7 +10911,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10912 "configure"
+#line 10914 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -15076,11 +15078,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15079: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15081: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15083: \$? = $ac_status" >&5
+   echo "$as_me:15085: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15175,11 +15177,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15178: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15180: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15182: \$? = $ac_status" >&5
+   echo "$as_me:15184: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15227,11 +15229,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15230: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15232: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15234: \$? = $ac_status" >&5
+   echo "$as_me:15236: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -25994,6 +25996,79 @@ _ACEOF
     fi
 }
 
+CheckVNC()
+{
+    # Check whether --enable-video-vnc was given.
+if test "${enable_video_vnc+set}" = set; then
+  enableval=$enable_video_vnc;
+else
+  enable_video_vnc=no
+fi
+
+    if test x$enable_video = xyes -a x$enable_video_vnc = xyes; then
+        { $as_echo "$as_me:$LINENO: checking for LibVNCServer support" >&5
+$as_echo_n "checking for LibVNCServer support... " >&6; }
+        video_vnc=no
+        cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+         #include <rfb/rfb.h>
+
+int
+main ()
+{
+
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
+$as_echo "$ac_try_echo") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+
+        video_vnc=yes
+
+else
+  $as_echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+        { $as_echo "$as_me:$LINENO: result: $video_vnc" >&5
+$as_echo "$video_vnc" >&6; }
+        if test x$video_vnc = xyes; then
+            cat >>confdefs.h <<\_ACEOF
+#define SDL_VIDEO_DRIVER_VNC 1
+_ACEOF
+
+            SOURCES="$SOURCES $srcdir/src/video/vnc/*.c"
+            EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lvncserver"
+            have_video=yes
+        fi
+    fi
+}
 
 CheckAAlib()
 {
@@ -29995,6 +30070,7 @@ _ACEOF
         CheckSVGA
         CheckVGL
         CheckWscons
+        CheckVNC
         CheckAAlib
         CheckCaca
         CheckQtopia

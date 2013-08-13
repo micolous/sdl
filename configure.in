@@ -1447,6 +1447,30 @@ AC_HELP_STRING([--enable-video-wscons], [use wscons video driver [[default=yes]]
     fi
 }
 
+dnl Find the libvncserver includes
+CheckVNC()
+{
+    AC_ARG_ENABLE(video-vnc,
+AC_HELP_STRING([--enable-video-vnc], [use libvncserver video driver [[default=no]]]),
+                  , enable_video_vnc=no)
+    if test x$enable_video = xyes -a x$enable_video_vnc = xyes; then
+        AC_MSG_CHECKING(for LibVNCServer support)
+        video_vnc=no
+        AC_TRY_COMPILE([
+         #include <rfb/rfb.h>
+        ],[
+        ],[
+        video_vnc=yes
+        ])
+        AC_MSG_RESULT($video_vnc)
+        if test x$video_vnc = xyes; then
+            AC_DEFINE(SDL_VIDEO_DRIVER_VNC)
+            SOURCES="$SOURCES $srcdir/src/video/vnc/*.c"
+            EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lvncserver"
+            have_video=yes
+        fi
+    fi
+}
 
 dnl Find the AAlib includes
 CheckAAlib()
@@ -2329,6 +2353,7 @@ case "$host" in
         CheckSVGA
         CheckVGL
         CheckWscons
+        CheckVNC
         CheckAAlib
         CheckCaca
         CheckQtopia
