@@ -1,0 +1,111 @@
+= SDL VNC Server Video Driver =
+
+Michael Farrell <micolous+sdl@gmail.com> 
+Website/blog: http://micolous.id.au/
+
+This is the second version of the patch.  It is considered a beta version, for
+testing purposes.
+
+This is a patch against SDL 1.2.14 to enable support for SDL to act as a VNC
+server.  This also has keyboard and mouse support, so you can control an SDL
+application remotely.
+
+You could also use SDL as an advanced 2D graphics rendering library for a 
+VNC-based service instead of using libvncserver directly.  
+
+Be aware that this driver implements everything in software, so if your
+computer is slow, it will result in performance issues.  Having many connected
+client will also result in a severe performance hit, however you could use
+other VNC servers running on other computers to act as proxies for other
+clients in order to scale it further.
+
+Supports:
+ * 8, 16, 24, 32 bpp visuals
+ * Colour palettes
+ * Keyboard support
+ * Mouse support (absolute positioning only, no mouse grabbing)
+ * Mouse cursors
+ * pygame applications (at 16, 24, and 32 bpp)
+ * View-only mode
+ 
+Stuff that needs fixing or implementing:
+ * Reduce/eliminate tearing on frequent screen updates (vsync)
+ * Run libvncserver's event loop inside SDL's event loop system
+ * Password protection on the VNC server; access control
+ * Fix screen resolution change colour issues
+ * pygame applications (at 8 bpp)
+ 
+Stuff that will never work:
+ * OpenGL surfaces
+ * CDROMs, Joysticks and Sound over VNC.  They always connect to the "host"
+   machine.
+ * YUV video output
+ * DMA on VNC client's hardware surface
+ * Mouse grabbing / constraining
+ * Relative position reporting from the mouse
+ * Surface locking and flipping.  Instead, hold off on pushing SDL_UpdateRects 
+   until you're ready for the screen redraw to be pushed.  Note that new
+   clients will always get the current contents of the framebuffer.
+
+== Building ==
+ 
+To build SDL with support for the VNC server, you'll need libvncserver.  You
+then need to enable building the VNC output module by passing the 
+`--enable-video-vnc' option to ./configure.
+
+== Runtime ==
+
+You enable use of the module at run-time by setting an environment variable:
+
+$ SDL_VIDEODRIVER="vnc" ./sdlapp
+
+pygame applications can also be run in this way:
+
+$ SDL_VIDEODRIVER="vnc" python pygameapp.py
+
+== Environment Variables ==
+
+=== SDL_VNC_DEPTH ===
+
+If you want to set the display depths reported as "supported" to the program,
+then you must set the SDL_VNC_DEPTH environment variable, which defaults to 16.
+
+pygame in particular uses this by trying to run applications at the lowest
+supported display depth.
+
+If you set SDL_VNC_DEPTH=0, it will report all colour depths as being supported.
+
+Note that this does not block a program from calling SDL_SetVideoMode at any
+depth, it simply reports different values to SDL_ListModes.
+
+=== SDL_VNC_ALWAYS_SHARED ===
+
+Default behaviour, SDL_VNC_ALWAYS_SHARED="1": The VNC display will be always
+"shared", that is, a VNC client may not take exclusive control of it and
+disconnect and exclude other clients from using the display.
+
+SDL_VNC_ALWAYS_SHARED="0": A client may take exclusive control of the display.
+
+=== SDL_VNC_DISPLAY ===
+
+Default behaviour, SDL_VNC_DISPLAY="-1": The VNC server will run on the first
+available display number / port number.
+
+Any other setting: The VNC server will run on a specific display number.  For
+example, if you set SDL_VNC_DISPLAY="20", you would have to connect with
+`vncviewer localhost:20'.
+
+=== SDL_VNC_VIEW_ONLY ===
+
+Default behaviour, SDL_VNC_VIEW_ONLY="0": The VNC server will accept mouse and
+keyboard events from clients.
+
+SDL_VNC_VIEW_ONLY="1": The VNC server will ignore all events from clients, and
+run in "view only" mode.  The mouse cursor will also be hidden all the time,
+and SDL will lie to the application that it's hardware cursor requests were
+successful to prevent implementation of a software cursor.
+
+It is recommended that if you want to use a status indicator in view only mode,
+that you write your application to implement it in your UI elements, instead of
+using a mouse cursor.
+

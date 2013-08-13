@@ -62,6 +62,15 @@ static void VNC_SetCaption(_THIS, const char* title, const char* icon);
 static int VNC_SetColors(_THIS, int firstcolor, int ncolors, SDL_Color *colors);
 /* VNC driver bootstrap functions */
 
+int VNC_getintenv(const char* name, int default_value) {
+	const char *envv = SDL_getenv(name);
+	int value = default_value;
+	if (envv)
+		value = atoi(envv);
+		
+	return value;
+}
+
 static int VNC_Available(void)
 {
 	const char *envr = SDL_getenv("SDL_VIDEODRIVER");
@@ -123,13 +132,16 @@ static SDL_VideoDevice *VNC_CreateDevice(int devindex)
 	device->InitOSKeymap = VNC_InitOSKeymap;
 	device->PumpEvents = VNC_PumpEvents;
 	
-	// we don't implement relative movement at all - everything is absolute
-	// this is due to the nature of VNC
+	// we don't implement relative movement or mouse restraints at all - 
+	// everything is absolute this is due to the nature of VNC
+
 	device->FreeWMCursor = VNC_FreeWMCursor;
 	device->CreateWMCursor = VNC_CreateWMCursor;
 	device->ShowWMCursor = VNC_ShowWMCursor;
 
 	device->free = VNC_DeleteDevice;
+	
+	device->hidden->viewOnly = VNC_getintenv("SDL_VNC_VIEW_ONLY", 0) == 1;
 	return device;
 }
 
@@ -150,24 +162,33 @@ int VNC_VideoInit(_THIS, SDL_PixelFormat *vformat)
 	
 	// make a blank cursor
 	this->hidden->hiddenCursor = rfbMakeXCursor(0, 0, "\0", "\0");
+	
 	/* We're done! */
 	return(0);
 }
 
 SDL_Rect **VNC_ListModes(_THIS, SDL_PixelFormat *format, Uint32 flags)
 {
-	// we only support truecolour visuals
-	return format->palette ? NULL : (SDL_Rect **) -1;
+	// SDL_VNC_DEPTH is useful for pygame applications which try to automatically
+	// run at the lowest display depth they can.
+	//
+	// Unfortunately, they have issues when running with a colour palette.  This
+	// hack tricks pygame into using a higher display depth.  Normally, pygame
+	// will try depth in the order of: 8, 8, 16, 15, 32.
+	//
+	// This will force SDL lie about what display depth it supports.  This 
+	// defaults to 16 bpp.  If set to 0, it will say it supports all depths.
+	//
+	// This doesn't stop a program from just calling SDL_SetVideoMode directly.
+	int depth = VNC_getintenv("SDL_VNC_DEPTH", 16);
+	
+	//printf("VNC_ListModes called, asking about SDL_PixelFormat bpp=%i\n", format->BitsPerPixel);
+	return (depth == 0 || format->BitsPerPixel == depth) ? (SDL_Rect **) -1 : NULL;
 }
 
 SDL_Surface *VNC_SetVideoMode(_THIS, SDL_Surface *current,
 				int width, int height, int bpp, Uint32 flags)
 {
-	if (bpp <= 8) {
-		SDL_SetError("bpp <= 8 not supported by VNC output module.");
-		return NULL;
-	}
-
 	if ( this->hidden->vncs && this->hidden->vncs->frameBuffer ) {
 		SDL_free( this->hidden->vncs->frameBuffer );
 	}
@@ -182,6 +203,12 @@ SDL_Surface *VNC_SetVideoMode(_THIS, SDL_Surface *current,
 		return(NULL);
 	} else {
 		if ( this->hidden->vncs ) {
+			// destroy the colour palette if it exists
+			// FIXME uncommenting this code causes things to crash
+			// libvncserver likes going around freeing memory on it's own.
+			//if (this->hidden->vncs->colourMap.data.bytes)
+			//	SDL_free(this->hidden->vncs->colourMap.data.bytes);
+		
 			// i believe that this will automatically free() the existing framebuffer,
 			// as attempts to free the old framebuffer result in segfault.
 			rfbNewFramebuffer(this->hidden->vncs, newbuffer, width, height, 8, bpp/8, bpp/8);
@@ -203,24 +230,62 @@ SDL_Surface *VNC_SetVideoMode(_THIS, SDL_Surface *current,
 		return(NULL);
 	}
 	
-	this->hidden->vncs->serverFormat.redShift = current->format->Rshift;
-	this->hidden->vncs->serverFormat.greenShift = current->format->Gshift;
-	this->hidden->vncs->serverFormat.blueShift = current->format->Bshift;
+	if (bpp > 8 /*current->format->palette == NULL*/) {
+		this->hidden->vncs->serverFormat.trueColour = TRUE;
+		
+		this->hidden->vncs->serverFormat.redShift = current->format->Rshift;
+		this->hidden->vncs->serverFormat.greenShift = current->format->Gshift;
+		this->hidden->vncs->serverFormat.blueShift = current->format->Bshift;
 	
-	this->hidden->vncs->serverFormat.redMax = current->format->Rmask >> current->format->Rshift;
-	this->hidden->vncs->serverFormat.greenMax = current->format->Gmask >> current->format->Gshift;
-	this->hidden->vncs->serverFormat.blueMax = current->format->Bmask >> current->format->Bshift;
-	
+		this->hidden->vncs->serverFormat.redMax = current->format->Rmask >> current->format->Rshift;
+		this->hidden->vncs->serverFormat.greenMax = current->format->Gmask >> current->format->Gshift;
+		this->hidden->vncs->serverFormat.blueMax = current->format->Bmask >> current->format->Bshift;
+	} else {
+		// implement a colour palette
+		this->hidden->vncs->serverFormat.trueColour = FALSE;
+		
+		this->hidden->vncs->colourMap.count = 1<<bpp;
+		this->hidden->vncs->colourMap.is16 = FALSE;
+		
+		this->hidden->vncs->colourMap.data.bytes = malloc((1<<bpp)*3);
+		if (!this->hidden->vncs->colourMap.data.bytes) {
+			SDL_OutOfMemory();
+			return NULL;
+		}
+		
+		memset(this->hidden->vncs->colourMap.data.bytes, 0, (1<<bpp)*3);
+	}
 	current->w = width;
 	current->h = height;
 	
 	// start server
 	if (firstStart) {
-		this->hidden->vncs->alwaysShared = TRUE;
+		int shared = VNC_getintenv("SDL_VNC_ALWAYS_SHARED", 1);
+		if (shared != 0 && shared != 1) {
+			SDL_SetError("SDL_VNC_ALWAYS_SHARED must be set to either 0 or 1");
+			return NULL;
+		}
+		
+		this->hidden->vncs->alwaysShared = shared == 1;
+		int display = VNC_getintenv("SDL_VNC_DISPLAY", -1);
+		
+		if (display < -1) {
+			SDL_SetError("SDL_VNC_DISPLAY must be > -1");
+			return NULL;
+		}
+		
+		if (display > -1) {
+			this->hidden->vncs->autoPort = FALSE;
+			this->hidden->vncs->port = SERVER_PORT_OFFSET + display;
+		} else {
+			this->hidden->vncs->autoPort = TRUE;
+		}
+		
 		rfbSetCursor(this->hidden->vncs, this->hidden->hiddenCursor);
 		rfbInitServer(this->hidden->vncs);
-		VNC_InitEvents(this);
-		rfbRunEventLoop(this->hidden->vncs, -1, TRUE);
+		if (!this->hidden->viewOnly)
+			VNC_InitEvents(this);
+		rfbRunEventLoop(this->hidden->vncs, 1, TRUE);
 	} else {
 		// TODO make libvncclient push out the updated colourmap to clients.
 	}
@@ -272,11 +337,32 @@ static void VNC_SetCaption(_THIS, const char* title, const char* icon)
 }
 
 
-int VNC_SetColors(_THIS, int firstcolor, int ncolors, SDL_Color *colors)
+int VNC_SetColors(_THIS, int firstcolour, int ncolours, SDL_Color *colours)
 {
-	// dummy function; we don't support setting colours, however it is required
-	// to be implemented in the API.
-	return 0;
+	if (this->hidden->vncs->serverFormat.trueColour) {
+		// we don't have a colour palette
+		return 0;
+	} else {
+		int x;
+		
+		printf("updating colours %i - %i (in %i palette)\n", firstcolour, firstcolour+ncolours, this->hidden->vncs->colourMap.count);
+		if (this->hidden->vncs->colourMap.count < firstcolour+ncolours) {
+			// too many colours sent!
+			return 0;
+		}
+		
+		int i=0;
+		// colour components are 8-bit
+		for (x=firstcolour; x<firstcolour+ncolours; x++) {
+			this->hidden->vncs->colourMap.data.bytes[i++] = colours[x].r;
+			this->hidden->vncs->colourMap.data.bytes[i++] = colours[x].g;
+			this->hidden->vncs->colourMap.data.bytes[i++] = colours[x].b;
+		}
+		
+		rfbSetClientColourMaps(this->hidden->vncs, firstcolour, ncolours);
+		
+		return 1;
+	}
 }
 
 

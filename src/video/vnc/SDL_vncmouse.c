@@ -36,8 +36,9 @@ struct WMcursor {
 	rfbCursorPtr c;
 };
 
-
 void VNC_FreeWMCursor(_THIS, WMcursor *cursor) {
+	SDL_free(cursor->c->source);
+	SDL_free(cursor->c->mask);
 	rfbFreeCursor(cursor->c);
 	cursor->c = NULL;
 	SDL_free(cursor);
@@ -46,15 +47,50 @@ void VNC_FreeWMCursor(_THIS, WMcursor *cursor) {
 WMcursor *VNC_CreateWMCursor(_THIS, Uint8 *data, Uint8 *mask, int w, int h, int hot_x, int hot_y) {
 	WMcursor *cursor = SDL_malloc(sizeof(WMcursor));
 	
-	cursor->c = rfbMakeXCursor(w, h, data, mask);
+	char* rfbData = SDL_malloc(w*h);
+	char* rfbMask = SDL_malloc(w*h);
+	
+	if (!cursor || !rfbData || !rfbMask) {
+		SDL_OutOfMemory();
+		return NULL;
+	}
+	
+	// Convert the cursor to rfb/x11 format
+	// SDL stores a cursor as a series of bits, in MSB order
+	// RFB expects it as a series of bytes, with space==0, x==1.
+	int i;
+	for (i=0; i<w*h; i++)
+		rfbData[i] = data[i/8] & (1<<(7-(i%8))) ? 'x' : ' ';
+	for (i=0; i<w*h; i++)
+		rfbMask[i] = mask[i/8] & (1<<(7-(i%8))) ? 'x' : ' ';
+	
+	cursor->c = rfbMakeXCursor(w, h, rfbData, rfbMask);
 	cursor->c->xhot = hot_x;
 	cursor->c->yhot = hot_y;
 	
-	// prevent libvncserver from free()ing cursors.
+	// prevent libvncserver from free()ing cursors and causing us to crash
 	cursor->c->cleanup = 
 	cursor->c->cleanupSource = 
 	cursor->c->cleanupMask =
 	cursor->c->cleanupRichSource = FALSE;
+	
+	/*
+	printf("Created new %ix%i cursor, hotspot at %x,%x\n", w, h, hot_x, hot_y);
+	printf("Cursor:\n");
+	int y=0, x;
+	for (; y<h; y++) {
+		for (x=0; x<w; x++)
+			printf("%02x", rfbData[(y*w)+x]);
+		printf("\n");
+	}
+	
+	printf("\nMask:\n");
+	for (y=0; y<h; y++) {
+		for (x=0; x<w; x++)
+			printf("%02x", rfbMask[(y*w)+x]);
+		printf("\n");
+	}
+	*/
 	
 	return cursor;
 }
@@ -62,6 +98,11 @@ WMcursor *VNC_CreateWMCursor(_THIS, Uint8 *data, Uint8 *mask, int w, int h, int 
 int VNC_ShowWMCursor(_THIS, WMcursor *cursor) {
 	// only allowed to do this when the server is active.
 	if (this->hidden->vncs) {
+		// in view-only mode, don't actually set the mouse cursor, but lie about it
+		// and report success so a software cursor is not implemented.
+		if (this->hidden->viewOnly)
+			return 1;
+			
 		if (cursor && cursor->c) {
 			// show a specific cursor
 			rfbSetCursor(this->hidden->vncs, cursor->c);

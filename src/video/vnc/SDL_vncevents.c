@@ -51,40 +51,83 @@ void VNC_InitOSKeymap(_THIS)
 void VNC_KbdAddEvent(rfbBool down, rfbKeySym keySym, struct _rfbClientRec* cl)
 {
 	// handle a keyboard event from the vnc client.
-	printf("VNC: got keypress %u\n", keySym);
 	SDL_keysym sdlkey;
 	memset(&sdlkey, 0, sizeof(SDL_keysym));
 	
-	printf("VNC: determining key\n");
 	switch (keySym) {
 		// we need to remap some keycodes because libvncserver and sdl treat them differently	
-		case XK_Shift_L:     sdlkey.sym = SDLK_LSHIFT;     break;
-		case XK_Shift_R:     sdlkey.sym = SDLK_RSHIFT;     break;
+		case XK_Shift_L:     sdlkey.sym = SDLK_LSHIFT;       break;
+		case XK_Shift_R:     sdlkey.sym = SDLK_RSHIFT;       break;
 		
-		case XK_Control_L:   sdlkey.sym = SDLK_LCTRL;      break;
-		case XK_Control_R:   sdlkey.sym = SDLK_RCTRL;      break;
+		case XK_Control_L:   sdlkey.sym = SDLK_LCTRL;        break;
+		case XK_Control_R:   sdlkey.sym = SDLK_RCTRL;        break;
 
-		case XK_Meta_L:      sdlkey.sym = SDLK_LMETA;      break;
-		case XK_Meta_R:      sdlkey.sym = SDLK_RMETA;      break;
+		case XK_Meta_L:      sdlkey.sym = SDLK_LMETA;        break;
+		case XK_Meta_R:      sdlkey.sym = SDLK_RMETA;        break;
 
-		case XK_Alt_L:       sdlkey.sym = SDLK_LALT;       break;
-		case XK_Alt_R:       sdlkey.sym = SDLK_RALT;       break;
+		case XK_Alt_L:       sdlkey.sym = SDLK_LALT;         break;
+		case XK_Alt_R:       sdlkey.sym = SDLK_RALT;         break;
 		
-		case XK_Escape:			 sdlkey.sym = SDLK_ESCAPE;     break;
-		case XK_BackSpace:   sdlkey.sym = SDLK_BACKSPACE;  break;
-		case XK_Return:      sdlkey.sym = SDLK_RETURN;     break;		
-		case XK_Delete:      sdlkey.sym = SDLK_DELETE;     break;
-		case XK_Sys_Req:     sdlkey.sym = SDLK_SYSREQ;     break;
-		case XK_Scroll_Lock: sdlkey.sym = SDLK_SCROLLOCK;  break;
-		case XK_Pause:       sdlkey.sym = SDLK_PAUSE;      break;
-		case XK_Tab:         sdlkey.sym = SDLK_TAB;        break;
-		case XK_Clear:       sdlkey.sym = SDLK_CLEAR;      break;
+		case XK_Super_L:     sdlkey.sym = SDLK_LSUPER;       break;
+		case XK_Super_R:     sdlkey.sym = SDLK_RSUPER;       break;
 		
+		case XK_Escape:			 sdlkey.sym = SDLK_ESCAPE;       break;
+		case XK_BackSpace:   sdlkey.sym = SDLK_BACKSPACE;    break;
+		case XK_Return:      sdlkey.sym = SDLK_RETURN;       break;		
+		case XK_Sys_Req:     sdlkey.sym = SDLK_SYSREQ;       break;
+		case XK_Pause:       sdlkey.sym = SDLK_PAUSE;        break;
+		case XK_Tab:         sdlkey.sym = SDLK_TAB;          break;
+		case XK_Clear:       sdlkey.sym = SDLK_CLEAR;        break;
+		case XK_Menu:        sdlkey.sym = SDLK_MENU;         break;
+		case XK_EuroSign:    sdlkey.sym = SDLK_EURO;         break;
+		case XK_Undo:        sdlkey.sym = SDLK_UNDO;         break;
+		case XK_Print:       sdlkey.sym = SDLK_PRINT;        break;
+		case XK_Help:        sdlkey.sym = SDLK_HELP;         break;
+		case XK_Break:       sdlkey.sym = SDLK_BREAK;        break;
+		case XK_Mode_switch: sdlkey.sym = SDLK_MODE;         break;
+		case XK_Multi_key:   sdlkey.sym = SDLK_COMPOSE;      break;
 		
+		case XK_Insert:      sdlkey.sym = SDLK_INSERT;       break;
+		case XK_Delete:      sdlkey.sym = SDLK_DELETE;       break;
+		case XK_Home:        sdlkey.sym = SDLK_HOME;         break;
+		case XK_End:         sdlkey.sym = SDLK_END;          break;
+		case XK_Page_Up:     sdlkey.sym = SDLK_PAGEUP;       break;
+		case XK_Page_Down:   sdlkey.sym = SDLK_PAGEDOWN;     break;
+		
+		case XK_Left:        sdlkey.sym = SDLK_LEFT;         break;
+		case XK_Right:       sdlkey.sym = SDLK_RIGHT;        break;
+		case XK_Up:          sdlkey.sym = SDLK_UP;           break;
+		case XK_Down:        sdlkey.sym = SDLK_DOWN;         break;
+
+		case XK_Num_Lock:    sdlkey.sym = SDLK_NUMLOCK;      break;
+		case XK_Caps_Lock:   sdlkey.sym = SDLK_CAPSLOCK;     break;
+		case XK_Scroll_Lock: sdlkey.sym = SDLK_SCROLLOCK;    break;		
+
+		// these characters are printable, so we need to translate them as well.
+		case XK_KP_Decimal:  sdlkey.sym = SDLK_KP_PERIOD;    sdlkey.unicode = 0x002E; break;
+		case XK_KP_Divide:   sdlkey.sym = SDLK_KP_DIVIDE;    sdlkey.unicode = 0x00F7; break;
+		case XK_KP_Multiply: sdlkey.sym = SDLK_KP_MULTIPLY;  sdlkey.unicode = 0x00D7; break;
+		case XK_KP_Subtract: sdlkey.sym = SDLK_KP_MINUS;     sdlkey.unicode = 0x2212; break;
+		case XK_KP_Add:      sdlkey.sym = SDLK_KP_PLUS;      sdlkey.unicode = 0x002B; break;
+		case XK_KP_Enter:    sdlkey.sym = SDLK_KP_ENTER;     sdlkey.unicode = 0x000D; break;
+				
 		// the majority of keys however are the same
 		default:
 			sdlkey.sym = keySym;
 	}
+	// trap dangerous characters that we haven't translated yet
+	// because sometimes when these go through, things crash.
+	if (keySym > 0xF000 && !sdlkey.sym) {
+		printf("VNC: Warning, unknown high keycode %u recieved.\n", keySym);
+		return;
+	}
+	
+	// map to a unicode character.  we're pretty much just going to assume all is well.
+	// we don't have a keymap, so pretty much everything is one-to-one.
+	//
+	// in accordance with the behaviour of other SDL modules, we don't report
+	// this for keyup events.
+	sdlkey.unicode = keySym > 0xF000 || !down ? sdlkey.unicode : keySym;
 	
 	// handle capital letters
 	if (keySym >= XK_A && keySym <= XK_Z) {
@@ -93,27 +136,21 @@ void VNC_KbdAddEvent(rfbBool down, rfbKeySym keySym, struct _rfbClientRec* cl)
 	}
 	
 	// handle numpad
-	if (keySym >= XK_KP_0 && keySym <= XK_KP_9)
+	if (keySym >= XK_KP_0 && keySym <= XK_KP_9) {
 		sdlkey.sym = keySym - (XK_KP_0 - SDLK_KP0);
-		
+		sdlkey.unicode = 0x0030 + (keySym - XK_KP_0);
+	}
+	
 	// handle f-keys
 	if (keySym >= XK_F1 && keySym <= XK_F15)
 		sdlkey.sym = keySym - (XK_F1 - SDLK_F1);
-		
-	// map to a unicode character.  we're pretty much just going to assume all is well.
-	// we don't have a keymap, so pretty much everything is one-to-one.
-	//
-	// in accordance with the behaviour of other SDL modules, we don't report
-	// this for keyup events.
-	sdlkey.unicode = keySym > 0xFF00 || !down ? 0 : keySym;
 	
-	printf("VNC: %u(vnc) maps to %u(sdl)\n", keySym, sdlkey.sym);
+	//printf("VNC: %u(vnc) maps to %u(sdl)\n", keySym, sdlkey.sym);
 	
 	sdlkey.scancode = (uint8_t)(keySym & 0xFF);
 	
 	// pump that through to SDL
 	SDL_PrivateKeyboard(down, &sdlkey);
-	printf("VNC: event processing done!");
 
 }
 

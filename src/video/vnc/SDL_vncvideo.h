@@ -29,6 +29,7 @@
 
 #include "../SDL_sysvideo.h"
 #include <rfb/rfb.h>
+#include <rfb/rfbclient.h>
 
 /* Hidden "this" pointer for the video functions */
 #define _THIS	SDL_VideoDevice *this
@@ -39,6 +40,7 @@
 struct SDL_PrivateVideoData {
     rfbScreenInfoPtr vncs;
     rfbCursorPtr hiddenCursor;
+    rfbBool viewOnly;
 };
 
 #endif /* _SDL_vncvideo_h */
