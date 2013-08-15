@@ -51,6 +51,18 @@ WMcursor *VNC_CreateWMCursor(_THIS, Uint8 *data, Uint8 *mask, int w, int h, int 
 	char* rfbMask = SDL_malloc(w*h);
 	
 	if (!cursor || !rfbData || !rfbMask) {
+		if ( cursor ) {
+			SDL_free(cursor);
+		}
+		
+		if ( rfbData ) {
+			SDL_free(rfbData);
+		}
+		
+		if ( rfbMask ) {
+			SDL_free(rfbMask);
+		}
+	
 		SDL_OutOfMemory();
 		return NULL;
 	}

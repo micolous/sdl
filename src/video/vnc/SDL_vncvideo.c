@@ -42,6 +42,10 @@
 #include "SDL_vncevents_c.h"
 #include "SDL_vncmouse_c.h"
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 #define VNCVID_DRIVER_NAME "vnc"
 
 /* Initialization/Query functions */
@@ -99,10 +103,14 @@ static SDL_VideoDevice *VNC_CreateDevice(int devindex)
 				SDL_malloc((sizeof *device->hidden));
 	}
 	if ( (device == NULL) || (device->hidden == NULL) ) {
-		SDL_OutOfMemory();
 		if ( device ) {
+			if ( device->hidden ) {
+				SDL_free(device);
+			}
 			SDL_free(device);
 		}
+		
+		SDL_OutOfMemory();
 		return(0);
 	}
 	SDL_memset(device->hidden, 0, (sizeof *device->hidden));
@@ -268,9 +276,15 @@ SDL_Surface *VNC_SetVideoMode(_THIS, SDL_Surface *current,
 		
 		this->hidden->vncs->alwaysShared = shared == 1;
 		int display = VNC_getintenv("SDL_VNC_DISPLAY", -1);
+		int display6 = VNC_getintenv("SDL_VNC_DISPLAY6", -1);
 		
 		if (display < -1) {
 			SDL_SetError("SDL_VNC_DISPLAY must be > -1");
+			return NULL;
+		}
+		
+		if (display6 < -1) {
+			SDL_SetError("SDL_VNC_DISPLAY6 must be > -1");
 			return NULL;
 		}
 		
@@ -280,6 +294,29 @@ SDL_Surface *VNC_SetVideoMode(_THIS, SDL_Surface *current,
 		} else {
 			this->hidden->vncs->autoPort = TRUE;
 		}
+		
+		if (display6 > -1) {
+			this->hidden->vncs->autoPort = FALSE;
+			this->hidden->vncs->ipv6port = SERVER_PORT_OFFSET + display6;
+		} else if (!this->hidden->vncs->autoPort) {
+			// ipv4 port was set but not ipv6
+			// set the ipv6 port to the same.
+			this->hidden->vncs->ipv6port = this->hidden->vncs->port;
+		}
+			
+		
+		const char* listenAddr = SDL_getenv("SDL_VNC_LISTENIFACE");
+		
+		if (listenAddr) {
+			this->hidden->vncs->listenInterface = inet_addr(listenAddr);
+		}
+		
+		const char* listenAddr6 = SDL_getenv("SDL_VNC_LISTENIFACE6");
+		
+		if (listenAddr6) {
+			this->hidden->vncs->listen6Interface = listenAddr6;
+		}
+		
 		
 		rfbSetCursor(this->hidden->vncs, this->hidden->hiddenCursor);
 		rfbInitServer(this->hidden->vncs);

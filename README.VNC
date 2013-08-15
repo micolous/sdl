@@ -3,10 +3,10 @@
 Michael Farrell <micolous+sdl@gmail.com> 
 Website/blog: http://micolous.id.au/
 
-This is the second version of the patch.  It is considered a beta version, for
+This is the third version of the patch.  It is considered a beta version, for
 testing purposes.
 
-This is a patch against SDL 1.2.14 to enable support for SDL to act as a VNC
+This is a patch against SDL 1.2.15 to enable support for SDL to act as a VNC
 server.  This also has keyboard and mouse support, so you can control an SDL
 application remotely.
 
@@ -15,7 +15,7 @@ VNC-based service instead of using libvncserver directly.
 
 Be aware that this driver implements everything in software, so if your
 computer is slow, it will result in performance issues.  Having many connected
-client will also result in a severe performance hit, however you could use
+clients will also result in a severe performance hit, however you could use
 other VNC servers running on other computers to act as proxies for other
 clients in order to scale it further.
 
@@ -94,6 +94,10 @@ available display number / port number.
 Any other setting: The VNC server will run on a specific display number.  For
 example, if you set SDL_VNC_DISPLAY="20", you would have to connect with
 `vncviewer localhost:20'.
+
+From the third version, if SDL_VNC_DISPLAY6="-1", this also applies to the IPv6
+display port.  If SDL_VNC_DISPLAY6 is set to another value, this will be used
+to determine the display port that it runs on for IPv6 only.
 
 === SDL_VNC_VIEW_ONLY ===
 
